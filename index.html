@@ -1,85 +1,207 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Minecraft Fish Command Generator</title>
-    <script>
-        function getColorName(value) {
-            const colorMap = ["White", "Orange", "Magenta", "Light Blue", "Yellow", "Lime", "Pink", "Gray", "Purple", "Cyan", "Light Gray", "Blue", "Brown", "Green", "Red", "Black"];
-            return colorMap[value] || "Unknown";
-        }
-
-        function getPatternName(a, d) {
-            const patterns = [
-                ["Kob", "Sunstreak", "Snooper", "Dasher", "Brinely", "Spotty"], // a = 0
-                ["Flopper", "Stripey", "Glitter", "Blockfish", "Betty", "Clayfish"] // a = 1
-            ];
-            return patterns[a][d % 6] || "Unknown";
-        }
-
-        function setCookie(name, value, days) {
-            const d = new Date();
-            d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
-            document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
-        }
-
-        function getCookie(name) {
-            const cookies = document.cookie.split('; ');
-            for (let cookie of cookies) {
-                const [key, value] = cookie.split('=');
-                if (key === name) return parseInt(value);
-            }
-            return null;
-        }
-
-        let a = getCookie("a") ?? 0;
-        let b = getCookie("b") ?? 0;
-        let c = getCookie("c") ?? 0;
-        let d = getCookie("d") ?? 0;
-
-        function generateCommand() {
-            let bucketVariantTag = (d * (2 ** 24)) + (c * (2 ** 16)) + (b * (2 ** 8)) + a;
-            let color1 = getColorName(c);
-            let color2 = getColorName(d);
-            let pattern = getPatternName(a, d);
-            let customName = `${color1}-${color2} ${pattern}`;
-            let command = `/give @p tropical_fish_bucket[bucket_entity_data={BucketVariantTag:${bucketVariantTag}},custom_name='"${customName}"'] 1`;
-            
-            document.getElementById("output").textContent = command;
-            navigator.clipboard.writeText(command);
-
-            d++;
-            if (d > 15) {
-                d = 0;
-                c++;
-            }
-            if (c > 15) {
-                c = 0;
-                b++;
-            }
-            if (b > 5) {
-                b = 0;
-                a = (a + 1) % 2;
-            }
-            
-            setCookie("a", a, 365);
-            setCookie("b", b, 365);
-            setCookie("c", c, 365);
-            setCookie("d", d, 365);
-            
-            document.getElementById("values").textContent = `a: ${a}, b: ${b}, c: ${c}, d: ${d}`;
-        }
-    </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tạo Tropical Fish Bucket</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background-color: #f9f9f9;
+    }
+    h1 {
+      text-align: center;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #218838;
+    }
+    .result {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #e9ecef;
+      border-radius: 5px;
+    }
+  </style>
 </head>
 <body>
-    <h1>Minecraft Fish Command Generator</h1>
-    <button onclick="generateCommand()">Tạo</button>
-    <p><strong>Lệnh:</strong> <span id="output"></span></p>
-    <p><strong>Giá trị:</strong> <span id="values">a: 0, b: 0, c: 0, d: 0</span></p>
+  <div class="container">
+    <h1>Tạo Tropical Fish Bucket</h1>
+    <label for="c">Màu 1 (c):</label>
+    <input type="number" id="c" min="0" max="15" placeholder="Nhập giá trị c (0-15)">
     
-    <script>
-        document.getElementById("values").textContent = `a: ${a}, b: ${b}, c: ${c}, d: ${d}`;
-    </script>
+    <label for="d">Màu 2 (d):</label>
+    <input type="number" id="d" min="0" max="15" placeholder="Nhập giá trị d (0-15)">
+    
+    <label for="a">Loại Pattern (a):</label>
+    <input type="number" id="a" min="0" max="1" placeholder="Nhập giá trị a (0 hoặc 1)">
+    
+    <label for="b">Pattern (b):</label>
+    <input type="number" id="b" min="0" max="5" placeholder="Nhập giá trị b (0-5)">
+    
+    <button onclick="calculateResult()">Tạo Lệnh</button>
+    
+    <div class="result" id="result">
+      <!-- Kết quả sẽ hiển thị ở đây -->
+    </div>
+  </div>
+
+  <script>
+    // Bảng quy đổi màu
+    const colorMap = {
+      0: "White", 1: "Orange", 2: "Magenta", 3: "Light Blue",
+      4: "Yellow", 5: "Lime", 6: "Pink", 7: "Gray",
+      8: "Purple", 9: "Cyan", 10: "Light Gray", 11: "Blue",
+      12: "Brown", 13: "Green", 14: "Red", 15: "Black"
+    };
+
+    // Bảng quy đổi pattern
+    const patternMap = {
+      0: { 0: "Kob", 1: "Sunstreak", 2: "Snooper", 3: "Dasher", 4: "Brinely", 5: "Spotty" },
+      1: { 0: "Flopper", 1: "Stripey", 2: "Glitter", 3: "Blockfish", 4: "Betty", 5: "Clayfish" }
+    };
+
+    // Hàm lưu giá trị vào cookie
+    function setCookie(name, value, days) {
+      const date = new Date();
+      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+      const expires = "expires=" + date.toUTCString();
+      document.cookie = `${name}=${value};${expires};path=/`;
+    }
+
+    // Hàm lấy giá trị từ cookie
+    function getCookie(name) {
+      const cookieName = `${name}=`;
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        let cookie = cookies[i].trim();
+        if (cookie.startsWith(cookieName)) {
+          return cookie.substring(cookieName.length, cookie.length);
+        }
+      }
+      return "";
+    }
+
+    // Hàm khởi tạo giá trị từ cookie khi tải trang
+    function initializeValues() {
+      document.getElementById("c").value = getCookie("c") || 0;
+      document.getElementById("d").value = getCookie("d") || 0;
+      document.getElementById("a").value = getCookie("a") || 0;
+      document.getElementById("b").value = getCookie("b") || 0;
+    }
+
+    // Hàm tính toán kết quả
+    function calculateResult() {
+      // Lấy giá trị từ input
+      let c = parseInt(document.getElementById("c").value);
+      let d = parseInt(document.getElementById("d").value);
+      let a = parseInt(document.getElementById("a").value);
+      let b = parseInt(document.getElementById("b").value);
+
+      // Kiểm tra giá trị hợp lệ
+      if (isNaN(c) || c < 0 || c > 15 ||
+          isNaN(d) || d < 0 || d > 15 ||
+          isNaN(a) || (a !== 0 && a !== 1) ||
+          isNaN(b) || b < 0 || b > 5) {
+        alert("Vui lòng nhập giá trị hợp lệ!");
+        return;
+      }
+
+      // Tính result
+      const result = d * (2 ** 24) + c * (2 ** 16) + b * (2 ** 8) + a;
+
+      // Xác định màu1, màu2 và pattern
+      const color1 = colorMap[c];
+      const color2 = colorMap[d];
+      const pattern = patternMap[a][b];
+
+      // Tạo tên
+      const name = `${color1}-${color2} ${pattern}`;
+
+      // Tạo lệnh /give (bỏ dấu "/")
+      const command = `give @p tropical_fish_bucket[bucket_entity_data={BucketVariantTag:${result}},custom_name='"${name}"'] 1`;
+
+      // Hiển thị kết quả
+      document.getElementById("result").innerHTML = `
+        <strong>Kết quả:</strong><br>
+        <textarea id="commandOutput" rows="3" style="width:100%;">${command}</textarea>
+      `;
+
+      // Sao chép lệnh vào clipboard
+      copyToClipboard(command);
+
+      // Tăng giá trị d, c, b, a
+      d++;
+      if (d > 15) {
+        d = 0;
+        c++;
+        if (c > 15) {
+          c = 0;
+          b++;
+          if (b > 5) {
+            b = 0;
+            a++;
+            if (a > 1) {
+              a = 0;
+            }
+          }
+        }
+      }
+
+      // Cập nhật giá trị input
+      document.getElementById("c").value = c;
+      document.getElementById("d").value = d;
+      document.getElementById("a").value = a;
+      document.getElementById("b").value = b;
+
+      // Lưu giá trị vào cookie
+      setCookie("c", c, 7);
+      setCookie("d", d, 7);
+      setCookie("a", a, 7);
+      setCookie("b", b, 7);
+    }
+
+    // Hàm sao chép vào clipboard
+    function copyToClipboard(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+
+    // Khởi tạo giá trị từ cookie khi tải trang
+    window.onload = initializeValues;
+  </script>
 </body>
 </html>
