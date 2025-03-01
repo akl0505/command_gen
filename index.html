@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minecraft Fish Command Generator</title>
+    <script>
+        function getColorName(value) {
+            const colorMap = ["White", "Orange", "Magenta", "Light Blue", "Yellow", "Lime", "Pink", "Gray", "Purple", "Cyan", "Light Gray", "Blue", "Brown", "Green", "Red", "Black"];
+            return colorMap[value] || "Unknown";
+        }
+
+        function getPatternName(a, d) {
+            const patterns = [
+                ["Kob", "Sunstreak", "Snooper", "Dasher", "Brinely", "Spotty"], // a = 0
+                ["Flopper", "Stripey", "Glitter", "Blockfish", "Betty", "Clayfish"] // a = 1
+            ];
+            return patterns[a][d % 6] || "Unknown";
+        }
+
+        function setCookie(name, value, days) {
+            const d = new Date();
+            d.setTime(d.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${value};expires=${d.toUTCString()};path=/`;
+        }
+
+        function getCookie(name) {
+            const cookies = document.cookie.split('; ');
+            for (let cookie of cookies) {
+                const [key, value] = cookie.split('=');
+                if (key === name) return parseInt(value);
+            }
+            return null;
+        }
+
+        let a = getCookie("a") ?? 0;
+        let b = getCookie("b") ?? 0;
+        let c = getCookie("c") ?? 0;
+        let d = getCookie("d") ?? 0;
+
+        function generateCommand() {
+            let bucketVariantTag = (d * (2 ** 24)) + (c * (2 ** 16)) + (b * (2 ** 8)) + a;
+            let color1 = getColorName(c);
+            let color2 = getColorName(d);
+            let pattern = getPatternName(a, d);
+            let customName = `${color1}-${color2} ${pattern}`;
+            let command = `/give @p tropical_fish_bucket[bucket_entity_data={BucketVariantTag:${bucketVariantTag}},custom_name='"${customName}"'] 1`;
+            
+            document.getElementById("output").textContent = command;
+            navigator.clipboard.writeText(command);
+
+            d++;
+            if (d > 15) {
+                d = 0;
+                c++;
+            }
+            if (c > 15) {
+                c = 0;
+                b++;
+            }
+            if (b > 5) {
+                b = 0;
+                a = (a + 1) % 2;
+            }
+            
+            setCookie("a", a, 365);
+            setCookie("b", b, 365);
+            setCookie("c", c, 365);
+            setCookie("d", d, 365);
+            
+            document.getElementById("values").textContent = `a: ${a}, b: ${b}, c: ${c}, d: ${d}`;
+        }
+    </script>
+</head>
+<body>
+    <h1>Minecraft Fish Command Generator</h1>
+    <button onclick="generateCommand()">Tạo</button>
+    <p><strong>Lệnh:</strong> <span id="output"></span></p>
+    <p><strong>Giá trị:</strong> <span id="values">a: 0, b: 0, c: 0, d: 0</span></p>
+    
+    <script>
+        document.getElementById("values").textContent = `a: ${a}, b: ${b}, c: ${c}, d: ${d}`;
+    </script>
+</body>
+</html>
